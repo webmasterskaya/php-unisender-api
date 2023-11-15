@@ -1,0 +1,34 @@
+{
+	"name": "webmasterskaya/unisender",
+	"type": "library",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Artem Vasilev",
+			"email": "kern.usr@gmail.com",
+			"homepage": "https://github.com/kernusr",
+			"role": "Developer"
+		}
+	],
+	"require": {
+		"php": "^7.2.5 || ^8.0",
+		"psr-discovery/http-client-implementations": "~1",
+		"psr-discovery/http-factory-implementations": "~1",
+		"psr-discovery/log-implementations": "~1",
+		"psr/http-client": "~1",
+		"psr/http-factory": "~1",
+		"psr/log": "~1",
+		"ext-json": "*"
+	},
+	"autoload": {
+		"psr-4": {
+			"Webmasterskaya\\Unisender\\": "src/"
+		}
+	},
+	"config": {
+		"optimize-autoloader": true,
+		"preferred-install": "dist",
+		"sort-packages": true,
+		"process-timeout": 3600
+	}
+}
