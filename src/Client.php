@@ -25,7 +25,7 @@ use Webmasterskaya\Unisender\Exception\UnisenderException;
  * @method array isContactInLists(array $data) Метод используется для проверки, находится ли контакт в указанном(ых) списках пользователя.
  * @method array sendEmail(array $data) Метод для отправки одного индивидуального email-сообщения без использования персонализации и с ограниченными возможностями получения статистики.
  */
-class Unisender
+class Client
 {
     protected string $language = 'ru';
     /**
