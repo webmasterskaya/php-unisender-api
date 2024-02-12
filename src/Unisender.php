@@ -2,6 +2,7 @@
 
 namespace Webmasterskaya\Unisender;
 
+use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Client\ClientExceptionInterface;
 use PsrDiscovery\Discover;
 use PsrDiscovery\Exceptions\SupportPackageNotFoundException;
@@ -22,8 +23,6 @@ use Webmasterskaya\Unisender\Exception\UnisenderException;
  * @method array updateList(array $data) Метод для изменения свойств списка рассылки.
  * @method array getContact(array $data) Получение информации об одном контакте.
  * @method array isContactInLists(array $data) Метод используется для проверки, находится ли контакт в указанном(ых) списках пользователя.
- *
- *
  * @method array sendEmail(array $data) Метод для отправки одного индивидуального email-сообщения без использования персонализации и с ограниченными возможностями получения статистики.
  */
 class Unisender
@@ -163,10 +162,8 @@ class Unisender
     {
         /**
          * @var \Psr\Http\Client\ClientInterface          $client
-         * @var \Psr\Http\Message\StreamFactoryInterface  $stream_factory
-         * @var \Psr\Http\Message\RequestFactoryInterface $request_factory
          */
-        static $client, $stream_factory, $request_factory;
+        static $client;
 
         if (!isset($client)) {
             try {
@@ -177,28 +174,6 @@ class Unisender
                 }
             } catch (SupportPackageNotFoundException $e) {
                 throw new UnisenderException('PSR-18 HTTP Client not found');
-            }
-        }
-
-        if (!isset($stream_factory)) {
-            try {
-                $stream_factory = Discover::httpStreamFactory();
-                if (!($stream_factory instanceof \Psr\Http\Message\StreamFactoryInterface)) {
-                    throw new UnisenderException('PSR-17 HTTP Stream Factory not found');
-                }
-            } catch (SupportPackageNotFoundException $e) {
-                throw new UnisenderException('PSR-17 HTTP Stream Factory not found');
-            }
-        }
-
-        if (!isset($request_factory)) {
-            try {
-                $request_factory = Discover::httpRequestFactory();
-                if (!($request_factory instanceof \Psr\Http\Message\RequestFactoryInterface)) {
-                    throw new UnisenderException('PSR-17 HTTP Request Factory not found');
-                }
-            } catch (SupportPackageNotFoundException $e) {
-                throw new UnisenderException('PSR-17 HTTP Request Factory not found');
             }
         }
 
@@ -217,9 +192,11 @@ class Unisender
             '&',
             PHP_QUERY_RFC1738);
 
-        $stream = $stream_factory->createStream($query);
+        $psr17Factory = new Psr17Factory();
 
-        $request = $request_factory
+        $stream = $psr17Factory->createStream($query);
+
+        $request = $psr17Factory
             ->createRequest('POST', $uri)
             ->withHeader('Content-type', "application/x-www-form-urlencoded; charset=utf-8")
             ->withBody($stream);

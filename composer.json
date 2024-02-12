@@ -13,10 +13,9 @@
 	"require": {
 		"php": "^7.2.5 || ^8.0",
 		"psr-discovery/http-client-implementations": "~1",
-		"psr-discovery/http-factory-implementations": "~1",
 		"psr-discovery/log-implementations": "~1",
 		"psr/http-client": "~1",
-		"psr/http-factory": "~1",
+		"nyholm/psr7": "^1.8",
 		"psr/log": "~1",
 		"ext-json": "*"
 	},
