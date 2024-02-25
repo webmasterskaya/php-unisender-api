@@ -12,19 +12,7 @@ use Webmasterskaya\Unisender\Exception\UnisenderException;
 /**
  * Клиент для работы с рассылками
  *
- * Работа со списками контактов
- * @method array getLists(array $data) Метод для получения списков рассылок с их кодами.
- * @method array createList(array $data) Метод для создания нового списка контактов.
- * @method array updateList(array $data) Метод для изменения свойств списка рассылки.
- * @method array deleteList(array $data) Метод для удаления списка контактов.
- * @method array subscribe(array $data) Метод для подписки адресата на один или несколько списков рассылки.
- * @method array exclude(array $data) Метод для исключения адресата из списков рассылки.
- * @method array unsubscribe(array $data) Метод для отписывания адресата от рассылки.
- * @method array importContacts(array $data) Метод для массового импорта и синхронизации контактов.
- * @method array exportContacts(array $data) Метод для экспорта данных по контактам.
- * @method array getTotalContactsCount(array $data) Метод для получения информации о размере базы пользователя.
- * @method array getContactCount(array $data) Метод для получения количества контактов в списке.
- * @method array getContact(array $data) Метод для получения информации об одном контакте.
+ * @method array getLists() Метод для получения списков рассылок с их кодами.
  *
  * Работа с дополнительными полями и метками
  * @method array getFields(array $data) Метод для получения списка пользовательских полей.
@@ -190,13 +178,17 @@ class Client
      */
     public function __call(string $method, array $data = [])
     {
-        return $this->send($method, reset($data) ?: []);
+        return $this->send($method, $data);
     }
 
+
     /**
-     * @throws \Webmasterskaya\Unisender\Exception\UnisenderException
+     * @param string $method
+     * @param array $data
+     * @return array
+     * @throws UnisenderException
      */
-    public function send(string $method, array $data = [])
+    protected function send(string $method, array $data = []): array
     {
         if (!in_array($method, self::AVAILABLE_METHODS)) {
             throw new UnisenderException('The method "' . $method . '" doesn\'t exist!');
@@ -206,9 +198,12 @@ class Client
     }
 
     /**
-     * @throws \Webmasterskaya\Unisender\Exception\UnisenderException
+     * @param string $method
+     * @param array $data
+     * @return array
+     * @throws UnisenderException
      */
-    protected function execute(string $method, array $data = [])
+    protected function execute(string $method, array $data = []): array
     {
         /**
          * @var \Psr\Http\Client\ClientInterface $client
@@ -291,5 +286,301 @@ class Client
         $this->options[$key] = $value;
 
         return $this;
+    }
+
+    /**
+     * @param string $title
+     * @param string $before_subscribe_url
+     * @param string $after_subscribe_url
+     * @return array
+     * @throws UnisenderException
+     */
+    public function createList(string $title, string $before_subscribe_url = '', string $after_subscribe_url = ''): array
+    {
+        $data = ['title' => $title];
+
+        if (!empty($before_subscribe_url)) {
+            $data['before_subscribe_url'] = $before_subscribe_url;
+        }
+
+        if (!empty($after_subscribe_url)) {
+            $data['after_subscribe_url'] = $after_subscribe_url;
+        }
+
+        return $this->send('createList', $data);
+    }
+
+    /**
+     * @param int $list_id
+     * @return array
+     * @throws UnisenderException
+     */
+    public function deleteList(int $list_id): array
+    {
+        return $this->send('deleteList', ['list_id' => $list_id]);
+    }
+
+    /**
+     * @param string $contact_type
+     * @param string $contact
+     * @param int[] $list_ids
+     * @return array
+     * @throws UnisenderException
+     */
+    public function exclude(string $contact_type, string $contact, array $list_ids = []): array
+    {
+        $data = [
+            'contact_type' => $contact_type,
+            'contact' => $contact,
+        ];
+
+        if (!empty($list_ids)) {
+            $data['list_ids'] = implode(',', $list_ids);
+        }
+
+        return $this->send('exclude', $data);
+    }
+
+    /**
+     * Экспорт данных контактов из Unisender.
+     * Принцип использования:
+     * - Пользователь присылает запрос на экспорт контактов
+     * - Система готовит файл
+     * - Система отправляет пользователю, на указанный callback URL, уведомление, о готовности файла
+     * - Пользователь скачивает файл
+     *
+     * @note Для метода существует лимит на количество запросов от одного API-ключа или IP-адреса — 20 запросов/60 секунд.
+     *
+     * @param string $notify_url callback URL, на который будет отправлен ответ после того, как файл экспорта будет сформирован.
+     * @param int|null $list_id Необязательный код экспортируемого списка. Если не указан, будут экспортированы все списки.
+     * @param array $field_names Массив имён системных и пользовательских полей, которые надо экспортировать.
+     * @param string $email Email адрес. Если этот параметр указан, то результат будет содержать только один контакт с таким e-mail адресом.
+     * @param string $phone Номер телефона. Если этот параметр указан, то результат будет содержать только один контакт с таким номером телефона.
+     * @param string $tag Метка. Если этот параметр указан, то при поиске будут учтены только контакты, имеющие такую метку.
+     * @param string $email_status Статус email адреса. Если этот параметр указан, то результат будет содержать только контакты с таким статусом email адреса.
+     * @param string $phone_status Статус телефона. Если этот параметр указан, то результат будет содержать только контакты с таким статусом телефона.
+     * @return array
+     * @throws UnisenderException
+     */
+    public function exportContacts(string $notify_url, ?int $list_id = null, array $field_names = [], string $email = '', string $phone = '', string $tag = '', string $email_status = '', string $phone_status = ''): array
+    {
+        $data = ['notify_url' => $notify_url];
+
+        if (!empty($list_id)) {
+            $data['list_id'] = $list_id;
+        }
+
+        if (!empty($field_names)) {
+            $data['field_names'] = $field_names;
+        }
+
+        if (!empty($email)) {
+            $data['email'] = $email;
+        }
+        if (!empty($phone)) {
+            $data['phone'] = $phone;
+        }
+        if (!empty($tag)) {
+            $data['tag'] = $tag;
+        }
+
+        $available_email_statuses = ['new', 'invited', 'active', 'inactive', 'unsubscribed', 'blocked', 'activation_requested',];
+        if (!empty($email_status) && in_array($email_status, $available_email_statuses)) {
+            $data['email_status'] = $email_status;
+        }
+
+        $available_phone_statuses = ['new', 'active', 'inactive', 'unsubscribed', 'blocked'];
+        if (!empty($phone_status) && in_array($phone_status, $available_phone_statuses)) {
+            $data['email_status'] = $email_status;
+        }
+
+        return $this->send('async/exportContacts', $data);
+    }
+
+    /**
+     * Метод для получения количества контактов в списке.
+     *
+     * @note Должен быть передан хотя бы один из параметров $tag_id, $type, $search, иначе будет выброшено исключение.
+     *
+     * @param int $list_id id списка, по которому осуществляется поиск.
+     * @param int|null $tag_id поиск по тегу с определенным id
+     * @param string|null $type поиск по определенному типу контактов, возможные значения
+     * @param string $search поиск в email/телефоне по подстроке. Используется только с заданным params [type].
+     * @return array
+     * @throws UnisenderException
+     */
+    public function getContactCount(int $list_id, ?int $tag_id = null, ?string $type = null, string $search = ''): array
+    {
+        $params = [];
+        $data = ['list_id' => $list_id];
+
+        if (!empty($tag_id)) {
+            $params['tagId'] = $tag_id;
+        }
+
+        if (!empty($type) && in_array($type, ['address', 'phone'])) {
+            $params['type'] = $type;
+        }
+
+        if (!empty($search) && !empty($params['type'])) {
+            $params['search'] = $search;
+        }
+
+        if (empty($params)) {
+            throw new \InvalidArgumentException('Должен быть передан хотя бы один из параметров $tag_id, $type, $search');
+        }
+
+        $data['params'] = $params;
+
+        return $this->send('getContactCount', $data);
+    }
+
+    /**
+     * Метод возвращает размер базы контактов по логину пользователя.
+     *
+     * @param string $login Логин пользователя в системе.
+     * @return array
+     * @throws UnisenderException
+     */
+    public function getTotalContactsCount(string $login): array
+    {
+        return $this->send('getTotalContactsCount', ['login' => $login]);
+    }
+
+    /**
+     * Метод массового импорта контактов.
+     *
+     * @param array $field_names Массив названий столбцов данных. Обязательно должно присутствовать хотя бы поле «email», иначе метод вернет ошибку. Могут быть указаны названия существующих пользовательских полей и названия следующих системных полей.
+     * @param array $data Массив данных контактов, каждый элемент которого — массив полей, перечисленный в том порядке, в котором следуют field_names.
+     * @param bool $overwrite_tags true - перезаписать существующие метки, false - только добавлять новые, не удаляя старых.
+     * @param bool $overwrite_lists true - заменить на новые все данные о том, когда и в какие списки включены и от каких отписаны контакты.
+     * @return array
+     * @throws UnisenderException
+     */
+    public function importContacts(array $field_names, array $data = ['email'], bool $overwrite_tags = false, bool $overwrite_lists = false): array
+    {
+        $params = [
+            'field_names' => $field_names,
+            'data' => $data,
+            'overwrite_tags' => $overwrite_tags,
+            'overwrite_lists' => $overwrite_lists,
+        ];
+
+        if (empty($params['field_names'])) {
+            $params['field_names'] = ['email'];
+        }
+
+        return $this->send('importContacts', $params);
+    }
+
+    /**
+     * @param array $list_ids Массив с id списков, в которые нужно добавить контакт.
+     * @param array $fields Ассоциативный массив дополнительных полей.
+     * @param array $tags Массив меток, которые необходимо добавить к контакту. Максимально допустимое количество - 10 меток.
+     * @param int $double_optin Флаг проверки контакта. Принимает значение 0, 3 или 4.
+     * @param int $overwrite Режим перезаписывания полей и меток, число от 0 до 2
+     * @return array
+     * @throws UnisenderException
+     */
+    public function subscribe(array $list_ids, array $fields, array $tags = [], int $double_optin = 1, int $overwrite = 0): array
+    {
+        if (!in_array($double_optin, [0, 3, 4])) {
+            throw new \InvalidArgumentException('Параметр $double_optin принимает только значение 0, 3 или 4');
+        }
+
+        if ($overwrite < 0 || $overwrite > 2) {
+            throw new \InvalidArgumentException('Параметр $overwrite принимает только значения от 0 до 2');
+        }
+
+        $data = [
+            'list_ids' => implode(',', $list_ids),
+            'fields' => $fields,
+            'double_optin' => $double_optin,
+            'overwrite' => $overwrite
+        ];
+
+        if (!empty($tags)) {
+            if (count($tags) > 10) {
+                $tags = array_splice($tags, 0, 10);
+            }
+            $data['tags'] = implode(',', $tags);
+        }
+
+        return $this->send('subscribe', $data);
+    }
+
+    /**
+     * @param string $contact_type Тип отписываемого контакта - либо 'email', либо 'phone'.
+     * @param string $contact E-mail или телефон, который надо отписать от рассылок.
+     * @param array $list_ids Массив кодов списков, от которых требуется отписать контакт.
+     * @return array
+     * @throws UnisenderException
+     */
+    public function unsubscribe(string $contact_type, string $contact, array $list_ids = []): array
+    {
+        if (!in_array($contact_type, ['email', 'phone'])) {
+            throw new \InvalidArgumentException('Параметр $contact_type принимает только значения email или phone');
+        }
+
+        $data = [
+            'contact_type' => $contact_type,
+            'contact' => $contact,
+        ];
+
+        if (!empty($list_ids)) {
+            $data['list_ids'] = implode(',', $list_ids);
+        }
+
+        return $this->send('unsubscribe', $data);
+    }
+
+    /**
+     * Метод для изменения свойств списка рассылки.
+     *
+     * @param int $list_id Код списка, который нужно изменить
+     * @param string $title Название списка. Должно быть уникальным в вашем аккаунте.
+     * @param string $before_subscribe_url URL для редиректа на страницу "перед подпиской".
+     * @param string $after_subscribe_url URL для редиректа на страницу "после подписки".
+     * @return array
+     * @throws UnisenderException
+     */
+    public function updateList(int $list_id, string $title = '', string $before_subscribe_url = '', string $after_subscribe_url = ''): array
+    {
+        $data = ['list_id' => $list_id];
+
+        if (!empty($title)) {
+            $data['title'] = $title;
+        }
+
+        if (!empty($before_subscribe_url)) {
+            $data['before_subscribe_url'] = $before_subscribe_url;
+        }
+
+        if (!empty($after_subscribe_url)) {
+            $data['after_subscribe_url'] = $after_subscribe_url;
+        }
+
+        return $this->send('updateList', $data);
+    }
+
+    /**
+     * Метод возвращает информации об одном контакте.
+     *
+     * @param string $email E-mail адрес контакта, информацию по которому нужно получить
+     * @param bool $include_lists Вывод информации о списках, в которые добавлен контакт.
+     * @param bool $include_fields Вывод информации о дополнительных полях контакта.
+     * @param bool $include_details Вывод дополнительной информации о контакте.
+     * @return array
+     * @throws UnisenderException
+     */
+    public function getContact(string $email, bool $include_lists = false, bool $include_fields = false, bool $include_details = false): array
+    {
+        $data = ['email' => $email];
+
+        $data['include_lists'] = $include_lists;
+        $data['include_fields'] = $include_fields;
+        $data['include_details'] = $include_details;
+
+        return $this->send('getContact', $data);
     }
 }
