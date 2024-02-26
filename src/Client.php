@@ -304,9 +304,11 @@ class Client
     }
 
     /**
-     * @param int $list_id
+     * Метод для удаления списка рассылок по ID.
+     *
+     * @param int $list_id ID списка, который требуется удалить.
      * @return array
-     * @throws Exception
+     * @throws Exception|DependencyNotFoundException
      */
     public function deleteList(int $list_id): array
     {
