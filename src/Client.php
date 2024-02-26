@@ -273,7 +273,7 @@ class Client
         }
 
         if (array_key_exists('error', $result)) {
-            throw new Exception($result['error']);
+            $this->handleApiException($result['code'] ?? '', $result['error']);
         }
 
         return $result;
@@ -575,5 +575,15 @@ class Client
         $data['include_details'] = $include_details;
 
         return $this->send('getContact', $data);
+    }
+
+    protected function handleApiException(string $code, string $error)
+    {
+        switch ($code) {
+            case 'invalid_arg':
+                throw new InvalidArgumentException($error);
+            default:
+                throw new RuntimeException($error);
+        }
     }
 }
