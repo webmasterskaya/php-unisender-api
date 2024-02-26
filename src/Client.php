@@ -6,8 +6,10 @@ use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Client\ClientExceptionInterface;
 use PsrDiscovery\Discover;
 use PsrDiscovery\Exceptions\SupportPackageNotFoundException;
+use Webmasterskaya\Unisender\Exception\DependencyNotFoundException;
 use Webmasterskaya\Unisender\Exception\InvalidArgumentException;
-use Webmasterskaya\Unisender\Exception\UnisenderException;
+use Webmasterskaya\Unisender\Exception\Exception;
+use Webmasterskaya\Unisender\Exception\RuntimeException;
 
 /**
  * Клиент для работы с рассылками
@@ -146,12 +148,14 @@ class Client
 
     /**
      * @throws \Webmasterskaya\Unisender\Exception\InvalidArgumentException
-     * @throws \Webmasterskaya\Unisender\Exception\UnisenderException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
      */
-    public function __construct(string $api_key, $options = [])
+    public function __construct(string $api_key, ?array $options = [])
     {
-        if (empty($api_key)) {
-            throw new UnisenderException('API KEY not defined!');
+        $api_key = trim($api_key);
+
+        if (empty(trim($api_key))) {
+            throw new Exception('API KEY not defined!');
         }
 
         $this->api_key = trim($api_key);
@@ -168,13 +172,13 @@ class Client
                 $this->language = $options['lang'];
             }
         }
-//        compression
 
-
+        //TODO: Нужно добавить настройки сжатия
     }
 
     /**
-     * @throws \Webmasterskaya\Unisender\Exception\UnisenderException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @deprecated
      */
     public function __call(string $method, array $data = [])
     {
