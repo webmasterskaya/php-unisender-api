@@ -331,6 +331,7 @@ class Client
      * @return array
      * @throws \Webmasterskaya\Unisender\Exception\Exception
      * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\UnexpectedValueException
      */
     public function exclude(string $contact_type, string $contact, array $list_ids = []): array
     {
@@ -631,6 +632,33 @@ class Client
         $data['include_details'] = $include_details;
 
         return $this->send('getContact', $data);
+    }
+
+    /**
+     * @param string $email Валидный email адрес.
+     * @param array $list_ids Массив id списков.
+     * @param string $condition Условие проверки. Принимает 2 значения: "or" и "and". При "or" метод возвращает true, если контакт находится хотя бы в одном из указанных списков в list_ids, при "and" - если контакт есть во всех указанных списках.
+     * @return array
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     */
+    public function isContactInLists(string $email, array $list_ids, string $condition = 'or'): array
+    {
+        $allowed_condition = ['or', 'and'];
+        if (!in_array($condition, $allowed_condition)) {
+            throw new UnexpectedValueException(sprintf('Unexpected argument value provided of "%s". Expected: "%s". Passed: "%s"',
+                'condition',
+                implode('" or "', $allowed_condition),
+                $condition), 0);
+        }
+
+        $data = [
+            'email' => $email,
+            'list_ids' => implode(',', array_filter($list_ids, fn($id) => is_int($id))),
+            'condition' => $condition
+        ];
+
+        return $this->send('isContactInLists', $data);
     }
 
     /**
