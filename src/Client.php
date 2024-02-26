@@ -366,7 +366,7 @@ class Client
      * @param string $email_status Статус email адреса. Если этот параметр указан, то результат будет содержать только контакты с таким статусом email адреса.
      * @param string $phone_status Статус телефона. Если этот параметр указан, то результат будет содержать только контакты с таким статусом телефона.
      * @return array
-     * @throws Exception
+     * @throws Exception|DependencyNotFoundException
      */
     public function exportContacts(string $notify_url, ?int $list_id = null, array $field_names = [], string $email = '', string $phone = '', string $tag = '', string $email_status = '', string $phone_status = ''): array
     {
@@ -383,20 +383,34 @@ class Client
         if (!empty($email)) {
             $data['email'] = $email;
         }
+
         if (!empty($phone)) {
             $data['phone'] = $phone;
         }
+
         if (!empty($tag)) {
             $data['tag'] = $tag;
         }
 
-        $available_email_statuses = ['new', 'invited', 'active', 'inactive', 'unsubscribed', 'blocked', 'activation_requested',];
-        if (!empty($email_status) && in_array($email_status, $available_email_statuses)) {
+        $available_email_statuses = ['new', 'invited', 'active', 'inactive', 'unsubscribed', 'blocked', 'activation_requested'];
+        if (!empty($email_status)) {
+            if (!in_array($email_status, $available_email_statuses)) {
+                throw new UnexpectedValueException(sprintf('Unexpected argument value provided of "%s". Expected: "%s". Passed: "%s"',
+                    'email_status',
+                    implode('" or "', $available_email_statuses),
+                    $email_status), 0);
+            }
             $data['email_status'] = $email_status;
         }
 
         $available_phone_statuses = ['new', 'active', 'inactive', 'unsubscribed', 'blocked'];
-        if (!empty($phone_status) && in_array($phone_status, $available_phone_statuses)) {
+        if (!empty($phone_status)) {
+            if (!in_array($phone_status, $available_phone_statuses)) {
+                throw new UnexpectedValueException(sprintf('Unexpected argument value provided of "%s". Expected: "%s". Passed: "%s"',
+                    'phone_status',
+                    implode('" or "', $available_phone_statuses),
+                    $phone_status), 0);
+            }
             $data['email_status'] = $email_status;
         }
 
