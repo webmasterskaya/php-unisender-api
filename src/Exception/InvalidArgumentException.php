@@ -2,7 +2,7 @@
 
 namespace Webmasterskaya\Unisender\Exception;
 
-class InvalidArgumentException extends UnisenderException
+class InvalidArgumentException extends \InvalidArgumentException implements UnisenderExceptionInterface
 {
 
 }
