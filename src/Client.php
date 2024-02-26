@@ -4,6 +4,7 @@ namespace Webmasterskaya\Unisender;
 
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
 use PsrDiscovery\Discover;
 use PsrDiscovery\Exceptions\SupportPackageNotFoundException;
 use Webmasterskaya\Unisender\Exception\DependencyNotFoundException;
@@ -173,6 +174,7 @@ class Client
 
     /**
      * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      * @deprecated
      */
     public function __call(string $method, array $data = [])
@@ -187,7 +189,8 @@ class Client
      * @param string $method Имя метода API
      * @param array $data Аргументы метода API
      * @return array
-     * @throws DependencyNotFoundException|Exception
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      * @see https://www.unisender.com/ru/support/category/api/
      *
      */
@@ -206,7 +209,8 @@ class Client
      * @param string $method Имя метода API
      * @param array $data Аргументы метода API
      * @return array
-     * @throws DependencyNotFoundException|Exception
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     protected function execute(string $method, array $data = []): array
     {
@@ -218,7 +222,7 @@ class Client
         if (!isset($client)) {
             try {
                 $client = Discover::httpClient();
-                if (!($client instanceof \Psr\Http\Client\ClientInterface)) {
+                if (!($client instanceof ClientInterface)) {
                     throw new DependencyNotFoundException('PSR-18 HTTP Client not found');
                 }
             } catch (SupportPackageNotFoundException $e) {
@@ -287,7 +291,8 @@ class Client
      * @param string $before_subscribe_url URL для редиректа на страницу «перед подпиской».
      * @param string $after_subscribe_url URL для редиректа на страницу «после подписки».
      * @return array
-     * @throws Exception|DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     public function createList(string $title, string $before_subscribe_url = '', string $after_subscribe_url = ''): array
     {
@@ -309,7 +314,8 @@ class Client
      *
      * @param int $list_id ID списка, который требуется удалить.
      * @return array
-     * @throws Exception|DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     public function deleteList(int $list_id): array
     {
@@ -323,7 +329,8 @@ class Client
      * @param string $contact Email или телефон контакта, который нужно исключить.
      * @param int[] $list_ids Массив с id списков, из которых необходимо исключить контакт. Если не указан, то контакт будет исключен из всех списков.
      * @return array
-     * @throws Exception|DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     public function exclude(string $contact_type, string $contact, array $list_ids = []): array
     {
@@ -360,7 +367,8 @@ class Client
      * @param string $email_status Статус email адреса. Если этот параметр указан, то результат будет содержать только контакты с таким статусом email адреса.
      * @param string $phone_status Статус телефона. Если этот параметр указан, то результат будет содержать только контакты с таким статусом телефона.
      * @return array
-     * @throws Exception|DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     public function exportContacts(string $notify_url, ?int $list_id = null, array $field_names = [], string $email = '', string $phone = '', string $tag = '', string $email_status = '', string $phone_status = ''): array
     {
@@ -421,7 +429,8 @@ class Client
      * @param string|null $contact_type Указывает тип контакта, по которому осуществляется поиск. Доступные значения "email" и "phone"
      * @param string $search Строка поискового запроса. Можно использовать только в паре с аргументом $contact_type.
      * @return array
-     * @throws Exception|DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     public function getContactCount(int $list_id, ?int $tag_id = null, ?string $contact_type = null, string $search = ''): array
     {
@@ -469,7 +478,8 @@ class Client
      *
      * @param string $login Логин пользователя в системе.
      * @return array
-     * @throws Exception|DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     public function getTotalContactsCount(string $login): array
     {
@@ -484,7 +494,8 @@ class Client
      * @param bool $overwrite_tags true - перезаписать существующие метки, false - только добавлять новые, не удаляя старых.
      * @param bool $overwrite_lists true - заменить на новые все данные о том, когда и в какие списки включены и от каких отписаны контакты.
      * @return array
-     * @throws Exception|DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     public function importContacts(array $field_names, array $data = ['email'], bool $overwrite_tags = false, bool $overwrite_lists = false): array
     {
@@ -509,7 +520,8 @@ class Client
      * @param int $double_optin Флаг проверки контакта. Принимает значение 0, 3 или 4.
      * @param int $overwrite Режим перезаписывания полей и меток, число от 0 до 2
      * @return array
-     * @throws Exception|DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     public function subscribe(array $list_ids, array $fields, array $tags = [], int $double_optin = 1, int $overwrite = 0): array
     {
@@ -550,7 +562,8 @@ class Client
      * @param string $contact E-mail или телефон, который надо отписать от рассылок.
      * @param array $list_ids Массив кодов списков, от которых требуется отписать контакт.
      * @return array
-     * @throws Exception|DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     public function unsubscribe(string $contact_type, string $contact, array $list_ids = []): array
     {
@@ -576,7 +589,8 @@ class Client
      * @param string $before_subscribe_url URL для редиректа на страницу "перед подпиской".
      * @param string $after_subscribe_url URL для редиректа на страницу "после подписки".
      * @return array
-     * @throws Exception|DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     public function updateList(int $list_id, string $title = '', string $before_subscribe_url = '', string $after_subscribe_url = ''): array
     {
@@ -605,7 +619,8 @@ class Client
      * @param bool $include_fields Вывод информации о дополнительных полях контакта.
      * @param bool $include_details Вывод дополнительной информации о контакте.
      * @return array
-     * @throws Exception|DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
      */
     public function getContact(string $email, bool $include_lists = false, bool $include_fields = false, bool $include_details = false): array
     {
