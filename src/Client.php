@@ -317,9 +317,11 @@ class Client
     }
 
     /**
-     * @param string $contact_type
-     * @param string $contact
-     * @param int[] $list_ids
+     * Метод исключает e-mail или телефон контакта из одного или нескольких списков.
+     *
+     * @param string $contact_type Тип исключаемого контакта - либо 'email', либо 'phone'.
+     * @param string $contact Email или телефон контакта, который нужно исключить.
+     * @param int[] $list_ids Массив с id списков, из которых необходимо исключить контакт. Если не указан, то контакт будет исключен из всех списков.
      * @return array
      * @throws Exception|DependencyNotFoundException
      */
