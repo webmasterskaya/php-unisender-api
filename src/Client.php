@@ -10,6 +10,7 @@ use Webmasterskaya\Unisender\Exception\DependencyNotFoundException;
 use Webmasterskaya\Unisender\Exception\InvalidArgumentException;
 use Webmasterskaya\Unisender\Exception\Exception;
 use Webmasterskaya\Unisender\Exception\RuntimeException;
+use Webmasterskaya\Unisender\Exception\UnexpectedValueException;
 
 /**
  * Клиент для работы с рассылками
@@ -320,10 +321,18 @@ class Client
      * @param string $contact
      * @param int[] $list_ids
      * @return array
-     * @throws Exception
+     * @throws Exception|DependencyNotFoundException
      */
     public function exclude(string $contact_type, string $contact, array $list_ids = []): array
     {
+        $available_contact_type = ['email', 'phone'];
+        if (!in_array($contact_type, $available_contact_type)) {
+            throw new UnexpectedValueException(sprintf('Unexpected argument value provided of "%s". Expected: "%s". Passed: "%s"',
+                'contact_type',
+                implode('" or "', $available_contact_type),
+                $contact_type), 0);
+        }
+
         $data = [
             'contact_type' => $contact_type,
             'contact' => $contact,
