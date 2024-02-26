@@ -327,13 +327,7 @@ class Client
      */
     public function exclude(string $contact_type, string $contact, array $list_ids = []): array
     {
-        $available_contact_type = ['email', 'phone'];
-        if (!in_array($contact_type, $available_contact_type)) {
-            throw new UnexpectedValueException(sprintf('Unexpected argument value provided of "%s". Expected: "%s". Passed: "%s"',
-                'contact_type',
-                implode('" or "', $available_contact_type),
-                $contact_type), 0);
-        }
+        $this->checkAllowedContactType($contact_type);
 
         $data = [
             'contact_type' => $contact_type,
@@ -445,13 +439,8 @@ class Client
         }
 
         if (!empty($contact_type)) {
-            $available_contact_type = ['email', 'phone'];
-            if (!in_array($contact_type, $available_contact_type)) {
-                throw new UnexpectedValueException(sprintf('Unexpected argument value provided of "%s". Expected: "%s". Passed: "%s"',
-                    'contact_type',
-                    implode('" or "', $available_contact_type),
-                    $contact_type), 0);
-            }
+            $this->checkAllowedContactType($contact_type);
+
             $params['type'] = $contact_type;
 
             if (empty($search)) {
@@ -480,7 +469,7 @@ class Client
      *
      * @param string $login Логин пользователя в системе.
      * @return array
-     * @throws Exception
+     * @throws Exception|DependencyNotFoundException
      */
     public function getTotalContactsCount(string $login): array
     {
@@ -495,7 +484,7 @@ class Client
      * @param bool $overwrite_tags true - перезаписать существующие метки, false - только добавлять новые, не удаляя старых.
      * @param bool $overwrite_lists true - заменить на новые все данные о том, когда и в какие списки включены и от каких отписаны контакты.
      * @return array
-     * @throws Exception
+     * @throws Exception|DependencyNotFoundException
      */
     public function importContacts(array $field_names, array $data = ['email'], bool $overwrite_tags = false, bool $overwrite_lists = false): array
     {
@@ -520,16 +509,23 @@ class Client
      * @param int $double_optin Флаг проверки контакта. Принимает значение 0, 3 или 4.
      * @param int $overwrite Режим перезаписывания полей и меток, число от 0 до 2
      * @return array
-     * @throws Exception
+     * @throws Exception|DependencyNotFoundException
      */
     public function subscribe(array $list_ids, array $fields, array $tags = [], int $double_optin = 1, int $overwrite = 0): array
     {
-        if (!in_array($double_optin, [0, 3, 4])) {
-            throw new \InvalidArgumentException('Параметр $double_optin принимает только значение 0, 3 или 4');
+        $allowed_double_optin = [0, 3, 4];
+        if (!in_array($double_optin, $allowed_double_optin)) {
+            throw new UnexpectedValueException(sprintf('Unexpected argument value provided of "%s". Expected: "%s". Passed: "%s"',
+                'double_optin',
+                implode('" or "', $allowed_double_optin),
+                $double_optin), 0);
         }
 
         if ($overwrite < 0 || $overwrite > 2) {
-            throw new \InvalidArgumentException('Параметр $overwrite принимает только значения от 0 до 2');
+            throw new UnexpectedValueException(sprintf('Unexpected argument value provided of "%s". Expected: "%s". Passed: "%s"',
+                'overwrite',
+                implode('" or "', [0, 1, 2]),
+                $overwrite), 0);
         }
 
         $data = [
@@ -554,13 +550,11 @@ class Client
      * @param string $contact E-mail или телефон, который надо отписать от рассылок.
      * @param array $list_ids Массив кодов списков, от которых требуется отписать контакт.
      * @return array
-     * @throws Exception
+     * @throws Exception|DependencyNotFoundException
      */
     public function unsubscribe(string $contact_type, string $contact, array $list_ids = []): array
     {
-        if (!in_array($contact_type, ['email', 'phone'])) {
-            throw new \InvalidArgumentException('Параметр $contact_type принимает только значения email или phone');
-        }
+        $this->checkAllowedContactType($contact_type);
 
         $data = [
             'contact_type' => $contact_type,
@@ -568,7 +562,7 @@ class Client
         ];
 
         if (!empty($list_ids)) {
-            $data['list_ids'] = implode(',', $list_ids);
+            $data['list_ids'] = implode(',', array_filter($list_ids, fn($id) => is_int($id)));
         }
 
         return $this->send('unsubscribe', $data);
@@ -626,11 +620,31 @@ class Client
 
     protected function handleApiException(string $code, string $error)
     {
+        /**
+         * Сервис может отвечать подобными ошибками "OB13012016 [Can't find user by provided login]",
+         * поэтому нужно привести их в человеческий вид
+         */
+        if (($open_char_pos = strpos($error, '[')) !== false) {
+            $close_char_pos = strripos($error, ']');
+            $error = substr($open_char_pos, $close_char_pos - $open_char_pos);
+        }
+
         switch ($code) {
             case 'invalid_arg':
                 throw new InvalidArgumentException($error);
             default:
                 throw new RuntimeException($error);
+        }
+    }
+
+    protected function checkAllowedContactType(string $contact_type)
+    {
+        $allowed_contact_type = ['email', 'phone'];
+        if (!in_array($contact_type, $allowed_contact_type)) {
+            throw new UnexpectedValueException(sprintf('Unexpected argument value provided of "%s". Expected: "%s". Passed: "%s"',
+                'contact_type',
+                implode('" or "', $allowed_contact_type),
+                $contact_type), 0);
         }
     }
 }
