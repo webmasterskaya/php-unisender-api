@@ -576,7 +576,7 @@ class Client
      * @param string $before_subscribe_url URL для редиректа на страницу "перед подпиской".
      * @param string $after_subscribe_url URL для редиректа на страницу "после подписки".
      * @return array
-     * @throws Exception
+     * @throws Exception|DependencyNotFoundException
      */
     public function updateList(int $list_id, string $title = '', string $before_subscribe_url = '', string $after_subscribe_url = ''): array
     {
@@ -598,14 +598,14 @@ class Client
     }
 
     /**
-     * Метод возвращает информации об одном контакте.
+     * Метод возвращает информацию об одном контакте.
      *
      * @param string $email E-mail адрес контакта, информацию по которому нужно получить
      * @param bool $include_lists Вывод информации о списках, в которые добавлен контакт.
      * @param bool $include_fields Вывод информации о дополнительных полях контакта.
      * @param bool $include_details Вывод дополнительной информации о контакте.
      * @return array
-     * @throws Exception
+     * @throws Exception|DependencyNotFoundException
      */
     public function getContact(string $email, bool $include_lists = false, bool $include_fields = false, bool $include_details = false): array
     {
@@ -618,6 +618,13 @@ class Client
         return $this->send('getContact', $data);
     }
 
+    /**
+     * Метод обрабатывает ошибки в ответах от сервиса и преобразует их в исключения
+     *
+     * @param string $code Код ошибки в ответе от сервиса
+     * @param string $error Текст ошибки в ответе от сервиса
+     * @return mixed
+     */
     protected function handleApiException(string $code, string $error)
     {
         /**
@@ -637,6 +644,12 @@ class Client
         }
     }
 
+    /**
+     * Метод проверяет, является ли переданное значение допустимым значением для типа контакта
+     *
+     * @param string $contact_type Проверяемое значение
+     * @return void
+     */
     protected function checkAllowedContactType(string $contact_type)
     {
         $allowed_contact_type = ['email', 'phone'];
