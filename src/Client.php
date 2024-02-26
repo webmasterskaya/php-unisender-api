@@ -341,7 +341,7 @@ class Client
         ];
 
         if (!empty($list_ids)) {
-            $data['list_ids'] = implode(',', $list_ids);
+            $data['list_ids'] = implode(',', array_filter($list_ids, fn($id) => is_int($id)));
         }
 
         return $this->send('exclude', $data);
