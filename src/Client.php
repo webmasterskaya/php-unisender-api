@@ -420,34 +420,54 @@ class Client
     /**
      * Метод для получения количества контактов в списке.
      *
-     * @note Должен быть передан хотя бы один из параметров $tag_id, $type, $search, иначе будет выброшено исключение.
+     * @note Должен быть передан хотя бы один из аргументов $tag_id или $contact_type.
      *
      * @param int $list_id id списка, по которому осуществляется поиск.
-     * @param int|null $tag_id поиск по тегу с определенным id
-     * @param string|null $type поиск по определенному типу контактов, возможные значения
-     * @param string $search поиск в email/телефоне по подстроке. Используется только с заданным params [type].
+     * @param int|null $tag_id id тега, по которому осуществляется поиск.
+     * @param string|null $contact_type Указывает тип контакта, по которому осуществляется поиск. Доступные значения "email" и "phone"
+     * @param string $search Строка поискового запроса. Можно использовать только в паре с аргументом $contact_type.
      * @return array
-     * @throws Exception
+     * @throws Exception|DependencyNotFoundException
      */
-    public function getContactCount(int $list_id, ?int $tag_id = null, ?string $type = null, string $search = ''): array
+    public function getContactCount(int $list_id, ?int $tag_id = null, ?string $contact_type = null, string $search = ''): array
     {
-        $params = [];
         $data = ['list_id' => $list_id];
 
+        if (empty($tag_id) && empty($contact_type)) {
+            throw new InvalidArgumentException(sprintf('Either "%s" or "%s" argument must be provided.',
+                'tag_id',
+                'contact_type'), 0);
+        }
+
+        $params = [];
         if (!empty($tag_id)) {
             $params['tagId'] = $tag_id;
         }
 
-        if (!empty($type) && in_array($type, ['address', 'phone'])) {
-            $params['type'] = $type;
-        }
+        if (!empty($contact_type)) {
+            $available_contact_type = ['email', 'phone'];
+            if (!in_array($contact_type, $available_contact_type)) {
+                throw new UnexpectedValueException(sprintf('Unexpected argument value provided of "%s". Expected: "%s". Passed: "%s"',
+                    'contact_type',
+                    implode('" or "', $available_contact_type),
+                    $contact_type), 0);
+            }
+            $params['type'] = $contact_type;
 
-        if (!empty($search) && !empty($params['type'])) {
+            if (empty($search)) {
+                throw new InvalidArgumentException(sprintf('The "%s" argument must be provided if the "%s" is given.',
+                    'search',
+                    'type'), 0);
+            }
+
             $params['search'] = $search;
         }
 
-        if (empty($params)) {
-            throw new \InvalidArgumentException('Должен быть передан хотя бы один из параметров $tag_id, $type, $search');
+
+        if (!empty($search) && empty($params['type'])) {
+            throw new InvalidArgumentException(sprintf('The "%s" argument must be provided if the "%s" is given.',
+                'search',
+                'type'), 0);
         }
 
         $data['params'] = $params;
