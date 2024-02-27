@@ -34,7 +34,6 @@ use Webmasterskaya\Unisender\Exception\UnexpectedValueException;
  * @method array getActualMessageVersion(array $data) Метод для получения актуальной версии письма.
  * @method array sendSms(array $data) Метод для отправки SMS-сообщения.
  * @method array checkSms(array $data) Метод для проверки статуса доставки SMS.
- * @method array sendEmail(array $data) Метод для упрощенной отправки индивидуальных email-сообщений.
  * @method array sendTestEmail(array $data) Метод для отправки тестовой email-рассылки на собственный адрес.
  * @method array checkEmail(array $data) Метод для проверки статуса доставки email.
  * @method array updateOptInEmail(array $data) Метод для изменения текста письма со ссылкой подтверждения подписки.
@@ -659,6 +658,52 @@ class Client
         ];
 
         return $this->send('isContactInLists', $data);
+    }
+
+    /**
+     * Метод для отправки одного индивидуального email-сообщения.
+     *
+     * @param \Webmasterskaya\Unisender\Email $email Объект письма
+     * @param int $list_id Код списка, от которого будет предложено отписаться адресату в случае, если он перейдёт по ссылке отписки.
+     * @param bool $track_read Отслеживать факт прочтения e-mail сообщения.
+     * @param bool $track_links Отслеживать переходы по ссылкам в e-mail сообщении.
+     * @param string|null $images_as Позволяет изменять режим обработки вложенных изображений в письме. Может иметь значения: attachments - картинки будут сохраняться внутри письма как вложения; only_links - картинки будут на серверах Uniseder, а в письмо будут встроены ссылки на них.
+     * @param string|null $cc Адрес получателя копии письма. Не более 1 адреса. Используется для отладки.
+     * @param array $metadata Метаданные, отправляемые в запросе, возвращаются в Webhooks.
+     * @return array
+     * @throws \Webmasterskaya\Unisender\Exception\DependencyNotFoundException
+     * @throws \Webmasterskaya\Unisender\Exception\Exception
+     */
+    public function sendEmail(Email $email, int $list_id, bool $track_read = false, bool $track_links = false, ?string $images_as = null, ?string $cc = null, array $metadata = []): array
+    {
+        $data = $email->getData();
+
+        $data['list_id'] = $list_id;
+        $data['lang'] = $this->language;
+        $data['track_read'] = $track_read;
+        $data['track_links'] = $track_links;
+        $data['error_checking'] = true;
+        $data['metadata'] = $metadata;
+
+        if (!empty($images_as)) {
+            $allowed_images_as = ['attachments', 'only_links'];
+            if (!in_array($images_as, $allowed_images_as)) {
+                throw new UnexpectedValueException(sprintf('Unexpected argument value provided of "%s". Expected: "%s". Passed: "%s"',
+                    'images_as',
+                    implode('" or "', $allowed_images_as),
+                    $images_as), 0);
+            }
+        } else {
+            $images_as = 'user_default';
+        }
+
+        $data['images_as'] = $images_as;
+
+        if (!empty($cc)) {
+            $data['cc'] = $cc;
+        }
+
+        return $this->send('sendEmail', $data);
     }
 
     /**
