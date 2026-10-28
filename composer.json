@@ -1,7 +1,14 @@
 {
 	"name": "webmasterskaya/php-unisender-api",
+	"description": "Unofficial PHP SDK for the UniSender email and SMS API",
+	"homepage": "https://github.com/webmasterskaya/php-unisender-api",
 	"type": "library",
 	"license": "MIT",
+	"keywords": ["unisender", "email", "sms", "api", "sdk", "psr-18"],
+	"support": {
+		"issues": "https://github.com/webmasterskaya/php-unisender-api/issues",
+		"source": "https://github.com/webmasterskaya/php-unisender-api"
+	},
 	"authors": [
 		{
 			"name": "Artem Vasilev",
@@ -11,21 +18,48 @@
 		}
 	],
 	"require": {
-		"php": "^7.4 || ^8.0",
-		"psr-discovery/http-client-implementations": "~1",
-		"psr-discovery/log-implementations": "~1",
-		"psr/http-client": "~1",
-		"nyholm/psr7": "^1.8",
-		"psr/log": "~1",
-		"ext-json": "*"
+		"php": ">=8.2",
+		"ext-json": "*",
+		"php-http/discovery": "^1.20",
+		"psr/http-client": "^1.0",
+		"psr/http-factory": "^1.0",
+		"psr/http-message": "^1.1 || ^2.0",
+		"psr/log": "^1.1 || ^2.0 || ^3.0"
+	},
+	"require-dev": {
+		"friendsofphp/php-cs-fixer": "^3.95",
+		"guzzlehttp/guzzle": "^7.10",
+		"phpstan/phpstan": "^2.2",
+		"phpunit/phpunit": "^11.5",
+		"vimeo/psalm": "^6.16"
 	},
 	"autoload": {
 		"psr-4": {
 			"Webmasterskaya\\Unisender\\": "src/"
 		}
 	},
+	"autoload-dev": {
+		"psr-4": {
+			"Webmasterskaya\\Unisender\\Tests\\": "tests/"
+		}
+	},
+	"scripts": {
+		"test": "phpunit --colors=always",
+		"lint": "php bin/lint.php",
+		"cs:check": "php-cs-fixer check --diff --verbose",
+		"cs:fix": "php-cs-fixer fix --verbose",
+		"phpstan": "phpstan analyse --no-progress --memory-limit=1G",
+		"psalm": "psalm --no-cache --no-progress",
+		"analyse": ["@phpstan", "@psalm"]
+	},
 	"config": {
+		"allow-plugins": {
+			"php-http/discovery": false
+		},
 		"optimize-autoloader": true,
+		"platform": {
+			"php": "8.2.27"
+		},
 		"preferred-install": "dist",
 		"sort-packages": true,
 		"process-timeout": 3600
