@@ -1,118 +1,143 @@
-# PHP API SDK - Интеграция сервиса рассылок Unisender
+# PHP SDK для API UniSender
 
-PHP API для [интеграции сервиса для рассылок Unisender по API](https://www.unisender.com/ru/support/category/api/).
-Интеграция с Unisender API значительно упрощает решение задач по email-маркетингу, позволяет полностью абстрагироваться от сетевого уровня и работать непосредственно с методами API.
+[![CI](https://github.com/webmasterskaya/php-unisender-api/actions/workflows/ci.yml/badge.svg)](https://github.com/webmasterskaya/php-unisender-api/actions/workflows/ci.yml)
+[![Stable version](https://poser.pugx.org/webmasterskaya/php-unisender-api/v/stable)](https://packagist.org/packages/webmasterskaya/php-unisender-api)
+[![PHP version](https://poser.pugx.org/webmasterskaya/php-unisender-api/require/php)](https://packagist.org/packages/webmasterskaya/php-unisender-api)
+[![License](https://poser.pugx.org/webmasterskaya/php-unisender-api/license)](LICENSE)
 
----
+Неофициальный PHP SDK для [API UniSender](https://www.unisender.com/ru/support/category/api/). Клиент отправляет безопасные POST-запросы, не привязан к конкретной HTTP-библиотеке и поддерживает все API-методы без ожидания обновления SDK.
 
-Unisender API — это специальный интерфейс для разработчиков, который позволяет интегрировать возможности электронной рассылки практически с любым открытым веб-сервисом.
+> Это независимый проект сообщества. Он не связан с UniSender, не поддерживается и не одобрен компанией.
 
-API для массовых email-рассылок позволяет управлять списками контактов, создавать и отправлять разные типы сообщений, смотреть статистику, а также предоставляет возможности для работы партнеров.
+## Требования
 
-Пользоваться API можно бесплатно на любом аккаунте. Чтобы получить доступ к API для email-рассылок нужен ключ, который можно скопировать в [личном кабинете](https://cp.unisender.com/ru/v5/user/info/api).
+- PHP 8.2 или новее;
+- Composer;
+- реализация PSR-18 и фабрики PSR-17.
 
----
+Совместимые зависимости обнаруживаются автоматически через `php-http/discovery`. Для нового проекта проще всего использовать Guzzle.
 
-<details>
+## Установка
 
-<summary>DISCLAIMER</summary>
-
-Сколько решений для работы с http api вы знаете? Можно бесконечно перечислять библиотеки, которые делают одно и то же: `guzzlehttp/guzzle`, `php-http/curl-client`, `symfony/http-client`, `laminas/laminas-http` и ещё десятки других!
-
-А какое из них используете вы? А какое используют зависимости вашего проекта? Сколько библиотек, для реализации одного и того же PSR вы тянете в свой проект?
-
-В отличие от большинства решений в интернете, **эта библиотека не принуждает вас к использованию какой-либо конкретной реализации PSR-18**, что делает её гораздо более гибкой и упрощает интеграцию в любое приложение.
-
-</details>
-
----
-
-### Перед началом работы
-
-- Требуется PHP 7.4 или выше.
-- Требуется наличие реализации [PSR-18 (HTTP Client)](https://www.php-fig.org/psr/psr-18/).
-
-В SDK применяется спецификация [PSR-18 (HTTP-client)](https://www.php-fig.org/psr/psr-18/).
-Это значит, что в вашем проекте должны быть зарегистрированы классы, реализующие эту спецификацию (например, [Guzzle](https://github.com/guzzle/guzzle)).
-
-Для автоматического обнаружения зависимостей используются пакеты [psr-discovery](https://github.com/psr-discovery). Подробнее, об [автоматическом обнаружении зависимостей](#автоматическое-обнаружение-зависимостей)
-
----
-
-### Установка
-
-Установка осуществляется с помощью пакетного менеджера Composer
-
-```shell
-composer require webmasterskaya/php-unisender-api
+```bash
+composer require webmasterskaya/php-unisender-api guzzlehttp/guzzle
 ```
 
----
-
-### Инициализация
-
-Для начала работы, создайте экземпляр клиента:
+## Быстрый старт
 
 ```php
-$client = new \Webmasterskaya\Unisender\Client(string $api_key[, ?array $options]);
+<?php
+
+require 'vendor/autoload.php';
+
+use Webmasterskaya\Unisender\Client;
+
+$unisender = new Client((string) getenv('UNISENDER_API_KEY'));
+
+$response = $unisender->send('createList', [
+    'title' => 'Новости компании',
+]);
+
+$listId = $response['result']['id'];
 ```
 
-**Параметры:**
-
-- `api_key` (string): API-ключ к вашему кабинету. Получить ключ можно в [личном кабинете](https://cp.unisender.com/ru/v5/user/info/api).
-- `options` (array): массив с настройками клиента. Опциональное. По-умолчанию - пустой массив. Допустимые поля:
-    - `lang` (string): язык сообщений сервера API (в данный момент поддерживается `ru`, `en`, `ua`). По-умолчанию - `ru`.
-
-Названия методов SDK совпадает с методами API, которые описаны в [документации](https://www.unisender.com/ru/support/category/api/).
-
-### [Доступные методы](docs/methods/README.md)
-
-- #### [Работа со списками контактов](docs/methods/LISTS.md)
-- #### [Создание и отправка сообщений](docs/methods/MESSAGES.md)
-- #### [Получение статистики](docs/methods/STATISTICS.md)
-- #### [Работа с шаблонами](docs/methods/TEMPLATES.md)
-- #### [Работа с дополнительными полями и метками](docs/methods/FIELDS.md)
-- #### [Работа с дополнительными полями и метками](docs/methods/FIELDS.md)
-- #### [Работа с заметками](docs/methods/NOTES.md)
-
----
-
-### Автоматическое обнаружение зависимостей
-
-Ознакомиться со списком автоматически обнаруживаемых библиотек можно по ссылкам ниже:
-
-- [PSR-18 (HTTP Client)](https://github.com/psr-discovery/http-client-implementations?tab=readme-ov-file#implementations)
-
-Если в списке автоматического обнаружения нет библиотеки, используемой на вашем проекте, то её нужно зарегистрировать самостоятельно. Подробнее, о [ручной регистрации зависимостей](#ручная-регистрация-зависимостей)
-
----
-
-### Ручная регистрация зависимостей
-
-#### Пример регистрации HttpClient в Bitrix
+Метод API можно вызвать и динамически:
 
 ```php
-\PsrDiscovery\Implementations\Psr18\Clients::add(
-    \PsrDiscovery\Entities\CandidateEntity::create(
-        'bitrix/main',
-        '~23',
-        static function (string $class = '\Bitrix\Main\Web\HttpClient') {
-            return new $class;
-        }
-    )
+$response = $unisender->getFields();
+$response = $unisender->subscribe([
+    'list_ids' => '12345',
+    'fields' => [
+        'email' => 'user@example.com',
+        'Name' => 'Иван',
+    ],
+    'double_optin' => 3,
+]);
+```
+
+Оба варианта возвращают полный ответ API с полями `result` и, если они есть, `warnings`. Имена и параметры методов соответствуют [официальной документации](https://www.unisender.com/ru/support/category/api/).
+
+### HTML в `sendEmail`
+
+HTML-разметку в параметре `body` нужно передавать без предварительного экранирования — клиент сам кодирует параметры для HTTP-запроса:
+
+```php
+$name = htmlspecialchars($userName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+$response = $unisender->sendEmail([
+    'email' => 'user@example.com',
+    'sender_name' => 'Company',
+    'sender_email' => 'mail@example.com',
+    'subject' => 'Тема письма',
+    'body' => "<p>Привет, <strong>{$name}</strong>!</p>",
+    'list_id' => 123,
+]);
+```
+
+Использовать `htmlspecialchars()` для всей строки `body` не следует: иначе HTML-теги могут отобразиться как обычный текст. Экранировать нужно только динамические значения, особенно данные, полученные от пользователя.
+
+## Настройка клиента
+
+```php
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\StreamFactoryInterface;
+use Psr\Log\LoggerInterface;
+
+$unisender = new Client(
+    api_key: (string) getenv('UNISENDER_API_KEY'),
+    options: ['lang' => 'en'],
+    httpClient: $httpClient,
+    requestFactory: $requestFactory,
+    streamFactory: $streamFactory,
+    logger: $logger,
 );
 ```
 
-#### Пример регистрации HttpClient в Joomla
+Все зависимости после API-ключа необязательны. Язык ответа — `ru` или `en`. Старый формат `new Client($key, ['lang' => 'en'])` сохранён.
+
+## Ошибки
 
 ```php
-\PsrDiscovery\Implementations\Psr18\Clients::add(
-    \PsrDiscovery\Entities\CandidateEntity::create(
-        'joomla/http',
-        '~3',
-        static function (string $class = '\Joomla\Http\Http') {
-            return new $class;
-        }
-    )
-);
+use Webmasterskaya\Unisender\Exception\ApiException;
+use Webmasterskaya\Unisender\Exception\NetworkException;
+
+try {
+    $response = $unisender->createList(['title' => 'Новости']);
+} catch (ApiException $exception) {
+    echo $exception->getApiCode();
+    echo $exception->getStatusCode();
+    echo $exception->getResponseBody();
+} catch (NetworkException $exception) {
+    // Ошибка PSR-18 транспорта: таймаут, DNS, TLS и т. п.
+}
 ```
+
+Все исключения SDK реализуют `UnisenderExceptionInterface`.
+
+## Миграция со старой версии
+
+Методы теперь принимают единый ассоциативный массив с именами параметров из API. Например, вместо `createList($title)` используется `createList(['title' => $title])`. Ответы больше не преобразуются в частичные DTO: клиент всегда возвращает исходный JSON-конверт с `result` и `warnings`. Это позволяет использовать новые поля API без обновления SDK.
+
+Полный список методов, параметров и форматов ответа находится в [официальной документации UniSender](https://www.unisender.com/ru/support/category/api/).
+
+## Разработка
+
+```bash
+composer install
+composer lint
+composer test
+composer cs:check
+composer cs:fix
+composer analyse
+composer phpstan
+composer psalm
+```
+
+Команда `lint` проверяет синтаксис PHP-файлов; `cs:check` проверяет код на соответствие PER Coding Style 2.0 и применимым правилам миграции PHP 8.2, а `cs:fix` применяет те же правила. Тесты PHPUnit используют поддельный HTTP-клиент, поэтому не требуют настоящего API-ключа и не обращаются к UniSender. Команда `composer analyse` запускает PHPStan на уровне `max` и Psalm с уровнем ошибок 1; при необходимости анализаторы можно запускать отдельно командами `phpstan` и `psalm`. CI выполняет эти проверки на PHP 8.2–8.5 и дополнительно проверяет минимально поддерживаемые версии зависимостей.
+
+## Лицензия
+
+Проект распространяется на условиях лицензии MIT. Вы можете свободно использовать, копировать, изменять и распространять его, в том числе в коммерческих проектах, при условии сохранения уведомления об авторских правах и текста лицензии.
+
+Подробнее см. в файле [LICENSE](LICENSE).
